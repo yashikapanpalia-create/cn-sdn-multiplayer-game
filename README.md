@@ -107,19 +107,20 @@ Use the commands and configuration appropriate to the installed Mininet and OS-K
 
 ## 9. Testing and Validation
 
-The following test cases are planned for D1 integration testing.
+Integration testing was performed for the following functionality:
 
-| Test Case | Expected Result | Actual Result |
-|---|---|---|
-| Player registration | Server confirms player registration | To be recorded |
-| Single-client update | Server receives the game-state update | To be recorded |
-| Multiple-client updates | Server handles updates from both players | To be recorded |
-| Sequence-number acknowledgement | Client receives an ACK for its sequence number | To be recorded |
-| Game-state forwarding | Other registered player receives the update | To be recorded |
-| SDN switch forwarding | Switch forwards packets using installed OpenFlow rules | To be recorded |
-| Flow installation | Controller output shows switch connection and flow installation | To be recorded |
+| Test Case | Observed Result |
+|---|---|
+| Player registration | Both players registered successfully |
+| Single-client update | Game-state update was sent successfully |
+| Multiple-client updates | Updates from the other player were displayed |
+| Sequence-number acknowledgement | ACK received for sequence number 1 |
+| Game-state forwarding | Update from the other player was visible |
+| SDN controller | Controller output showed switch connection and flow installation |
 
-Actual results must be filled in after running each test. Screenshots of client output, server output, and controller or switch flow information should be included as evidence.
+Screenshots of the application and controller output are saved as test evidence. Further verification of packet forwarding through the SDN switch should be documented before final submission.
+
+Detailed test results are available in [`tests/test-results.md`](tests/test-results.md).
 
 ## 10. Deliverable 1 (D1)
 
