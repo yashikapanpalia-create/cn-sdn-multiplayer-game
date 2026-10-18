@@ -18,14 +18,14 @@ The network consists of three Mininet hosts connected to an OpenFlow switch cont
 | s1 | OpenFlow 1.3 switch | — |
 | OS-Ken | SDN controller | — |
 
-Transport protocol: UDP  
-Application port: `5000`
+**Transport protocol:** UDP  
+**Application port:** `5000`
 
 ### Communication Flow
 
 `Player 1 / Player 2 → Mininet hosts → SDN switch → Game server`
 
-The SDN controller learns MAC addresses and installs forwarding rules as traffic passes through the switch.
+The SDN controller manages the switch's forwarding behavior by installing OpenFlow rules. The switch forwards packets between the players and the game server.
 
 ## 3. Project Structure
 
@@ -49,7 +49,7 @@ cn-sdn-multiplayer-game/
 └── README.md
 ```
 
-The JSON-based application in `app/` is the intended client-server implementation for this project. The additional root-level application files use a separate implementation and should not be mixed with the JSON-based application.
+The JSON-based client-server implementation in `app/` is the intended application for the documented setup. The additional root-level application files use a separate implementation and should not be mixed with the files in `app/`.
 
 ## 4. Application Protocol
 
@@ -57,7 +57,7 @@ The application uses UDP sockets and JSON-formatted messages.
 
 ### Registration
 
-Each client sends a registration message containing its player ID.
+Each client sends a registration message containing its player ID. The server records the player's address and sends a registration confirmation.
 
 ### Game-State Updates
 
@@ -71,10 +71,10 @@ Each update contains:
 
 The server:
 
-- Confirms player registration
-- Acknowledges accepted updates with their sequence numbers
-- Forwards game-state updates to other registered players
-- Returns error messages for invalid requests
+- Confirms player registration.
+- Acknowledges accepted updates with their sequence numbers.
+- Forwards game-state updates to other registered players.
+- Returns error messages for invalid requests.
 
 ## 5. Technologies and Requirements
 
@@ -91,23 +91,25 @@ The server:
 
 Run the project in the Ubuntu environment where Mininet and OS-Ken are installed.
 
+The commands below assume that the project is located at `/home/yashika/multiplayer_sdn`. Replace this path if your project is stored elsewhere.
+
 ### Step 1: Open the project directory
 
 ```bash
 cd ~/multiplayer_sdn
 ```
 
-If your project is stored elsewhere, use that directory instead.
-
 ### Step 2: Start the SDN controller
 
-Open a terminal, activate the Python environment in which OS-Ken is installed, navigate to the project directory, and run:
+Open a terminal, activate the Python environment in which OS-Ken is installed, and navigate to the project directory.
+
+Run:
 
 ```bash
 osken-manager controller.py
 ```
 
-Keep this terminal running.
+Keep the controller running in this terminal.
 
 ### Step 3: Start Mininet
 
@@ -127,35 +129,37 @@ At the Mininet prompt, run:
 h3 python3 /home/yashika/multiplayer_sdn/app/server.py
 ```
 
-Keep the server running. If your Ubuntu username or project location differs, replace the path accordingly.
+Keep the server running.
 
 ### Step 5: Start the player clients
 
-Open separate terminals or use Mininet host terminals to run the clients.
+Open another terminal and enter the Mininet CLI if needed, then start each client on its respective host.
 
-For Player 1:
+For Player 1, run at the `mininet>` prompt:
 
-```bash
-python3 /home/yashika/multiplayer_sdn/app/client.py P1 10.0.0.3
+```text
+h1 python3 /home/yashika/multiplayer_sdn/app/client.py P1 10.0.0.3
 ```
 
-For Player 2:
+For Player 2, run at the `mininet>` prompt:
 
-```bash
-python3 /home/yashika/multiplayer_sdn/app/client.py P2 10.0.0.3
+```text
+h2 python3 /home/yashika/multiplayer_sdn/app/client.py P2 10.0.0.3
 ```
 
-Run each client in its respective Mininet host, h1 and h2. Enter three integers for each game-state update, for example:
+Enter three integers for each game-state update: `x y score`.
+
+Example:
 
 ```text
 10 20 0
 ```
 
-The clients should display registration messages, acknowledgements, and updates received from the other player.
+The clients should display registration messages, acknowledgements, and game-state updates received from the other player.
 
 ### Step 6: Verify connectivity and forwarding
 
-At the Mininet prompt, check host connectivity:
+At the Mininet prompt, check connectivity between hosts:
 
 ```text
 pingall
@@ -171,35 +175,36 @@ Check the controller terminal for switch connection, table-miss flow installatio
 
 ## 7. Testing and Validation
 
-The following functionality was demonstrated in the recorded test sessions.
+The following functionality was demonstrated during integration testing.
 
 | Test Case | Observed Result |
 |---|---|
 | Player 1 registration | Registration successful |
 | Player 2 registration | Registration successful |
+| Host connectivity | `pingall` completed with 0% packet loss |
 | Game-state update | Client sent coordinates and score |
 | Sequence-number acknowledgement | ACK received for sequence number 1 |
 | Multiple-player communication | Each player received the other player's update |
-| SDN controller | Switch connection and flow installation messages were displayed |
+| SDN controller | Switch connection, table-miss flow installation, and forwarding-flow installation messages were observed |
 
-The controller logs demonstrate flow installation. The switch flow-table command above can be used to inspect the installed rules directly.
+The connectivity test, player communication tests, and controller output provide evidence of the integration. The switch flow-table command in Step 6 can also be used to inspect the installed OpenFlow rules.
 
 Detailed results are available in [`tests/test-results.md`](tests/test-results.md).
 
 ## 8. Test Evidence
 
-The screenshots are stored in the repository's `evidence/` folder.
+Screenshots from the integration tests are stored in the repository's `evidence/` folder.
 
-- [Player communication: registration, updates, and ACKs](evidence/Player%20communication%20(P1%20and%20P2).png)
+- [Player communication: registration, updates, and acknowledgements](evidence/Player%20communication%20(P1%20and%20P2).png)
 - [SDN controller: switch connection and flow installation](evidence/SDN%20controller%20(flow%20installation).png)
 
-The evidence folder also contains [`evidence/README.md`](evidence/README.md), which describes the screenshots.
+The folder also contains [`evidence/README.md`](evidence/README.md), which describes the screenshots.
 
 ## 9. Team Responsibilities
 
-- Person 1: UDP client and server application
-- Person 2: Mininet topology and SDN controller
-- Person 3: Integration, testing, and documentation
+- **Person 1:** UDP client and server application
+- **Person 2:** Mininet topology and SDN controller
+- **Person 3:** Integration, testing, and documentation
 
 ## 10. Deliverable 1 (D1)
 
@@ -217,4 +222,7 @@ The repository contains:
 
 ## 11. Conclusion
 
-This project demonstrates UDP socket communication between two players and a central game server in a Mininet environment controlled by an SDN controller. The recorded tests demonstrate player registration, game-state updates, acknowledgements, update forwarding, and controller flow installation.forwarding.
+This project demonstrates UDP socket communication between two players and a central game server in a Mininet environment controlled by an SDN controller. Integration testing demonstrated player registration, game-state updates, sequence-number acknowledgements, updates between players, host connectivity, and SDN controller flow installation.
+
+The project establishes the initial implementation of a multiplayer application over a software-defined network and provides source code, execution instructions, test results, and supporting screenshots.
+
