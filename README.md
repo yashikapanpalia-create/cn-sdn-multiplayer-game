@@ -298,18 +298,22 @@ pingall
 From the Mininet CLI:
 
 ```bash
-h3 python3 -u app/server.py
+h3 python3 -u app/server.py &
 ```
+
+The server runs in the background, allowing the Mininet CLI to remain available for launching the player clients.
 
 ### Start Player 1
 
-Open another Mininet CLI terminal or use the Mininet CLI to run:
+From the Mininet CLI:
 
 ```bash
 h1 python3 -u app/client.py P1 10.0.0.3
 ```
 
 ### Start Player 2
+
+From the Mininet CLI:
 
 ```bash
 h2 python3 -u app/client.py P2 10.0.0.3
