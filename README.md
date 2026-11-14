@@ -157,7 +157,35 @@ During the experiment, the following are observed:
 - Traffic-control queue statistics
 - Multiplayer application communication
 
-The `congestion_test.py` script starts, displays and stops the background congestion traffic.
+The `congestion_test.py` script provides functions to start, display and stop the background congestion traffic.
+
+### Running the Congestion Test
+
+After starting Mininet, execute the following commands in the **Mininet CLI**:
+
+```python
+py from congestion_test import start_congestion, show_congestion_output, stop_congestion
+```
+
+Start the congestion traffic:
+
+```python
+py start_congestion(net)
+```
+
+Display the iperf3 results and congestion statistics:
+
+```python
+py show_congestion_output(net)
+```
+
+Stop the background congestion traffic:
+
+```python
+py stop_congestion(net)
+```
+
+Run these commands in the given order. The congestion traffic runs for the configured 60-second experiment.
 
 ## 10. Experimental Results
 
@@ -284,10 +312,6 @@ For example:
 ```text
 10 20 0
 ```
-
-### Run Congestion Testing
-
-Use the functions in `congestion_test.py` from the Mininet environment to start the background UDP traffic, display the iperf3 results and stop the congestion traffic.
 
 ## 13. Repository Structure
 
