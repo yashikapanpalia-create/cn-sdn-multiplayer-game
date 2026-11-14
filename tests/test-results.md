@@ -1,29 +1,61 @@
-# D1 Integration Test Results
+# Integration and Test Results
 
-## Test Environment
+## 1. Test Environment
+
 - Network: Mininet
-- Transport protocol: UDP
-- UDP port: 5000
+- Controller: OS-Ken
+- Switch: Open vSwitch (OpenFlow 1.3)
+- Protocol: UDP
+- Application port: 5000
 - Player 1: h1 (10.0.0.1)
 - Player 2: h2 (10.0.0.2)
 - Game server: h3 (10.0.0.3)
-- SDN switch: s1
-- Controller: OS-Ken
 
-## Test Cases
+## 2. Functional Testing
 
-| Test case | Expected result | Observed result |
-|---|---|---|
-| Player 1 registration | P1 registers with the server | Registration successful in screenshot |
-| Player 2 registration | P2 registers with the server | Registration successful in screenshot |
-| Game-state update | Client sends x, y and score | Update sent successfully |
-| Sequence number | Server acknowledges the sequence number | ACK received for sequence 1 |
-| Multiple players | Other player receives the game-state update | Update from the other player is visible |
-| SDN controller | Switch connects and forwarding rules are installed | Controller output shows switch connection and flow installation |
+| Test | Result |
+|---|---|
+| Network topology initialization | Successful |
+| Host connectivity using `pingall` | 0% packet loss |
+| SDN controller connection | Verified |
+| Player registration | Successful |
+| Game-state transmission | Successful |
+| Server acknowledgements | Received |
+| Player-to-player update forwarding | Verified |
+| Sequence number handling | Implemented |
 
-## Evidence
-- Screenshot 1: Player registration, game-state updates and acknowledgements.
-- Screenshot 2: SDN controller connection and flow installation.
+## 3. Performance Testing
 
-## Conclusion
-Initial socket communication and player update exchange have been demonstrated. Further verification of packet forwarding through the SDN switch should be documented before final submission.
+| Measurement | Result |
+|---|---|
+| Average one-way latency – Player 1 | 16.525 ms |
+| Average one-way latency – Player 2 | 19.498 ms |
+| Average RTT – Player 1 | 39.200 ms |
+| Average RTT – Player 2 | 56.700 ms |
+| Average jitter – Player 1 | 0.647 ms |
+| Average jitter – Player 2 | 3.149 ms |
+
+*Normal-condition latency and jitter values are based on four samples per player.*
+
+## 4. Congestion Testing
+
+The server-facing link was configured at 2 Mbps. Two simultaneous UDP streams generated an aggregate offered load of 3 Mbps for 60 seconds.
+
+| Stream | Received bandwidth | Packet loss |
+|---|---:|---:|
+| h1 → h3 | 0.732 Mbps | 47% |
+| h2 → h3 | 1.13 Mbps | 18% |
+
+Traffic-control statistics:
+
+- Dropped packets: 7,657
+- Overlimits: 20,914
+- Requeues: 0
+
+Game-state messages continued to appear in the application logs during the observed congested run.
+
+## 5. Conclusion
+
+Testing demonstrated successful multiplayer communication over the SDN-controlled network. Performance measurements showed the effects of congestion on bandwidth and packet delivery. The application also continued exchanging game-state messages during the observed congestion experiment.
+
+*Congestion measurements represent one test run and may vary across repetitions.*
