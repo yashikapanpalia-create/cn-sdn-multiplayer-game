@@ -103,13 +103,15 @@ RTT is calculated using the client's local monotonic clock, avoiding the need fo
 
 One-way latency uses timestamps from the client and server. Accurate one-way measurements therefore require synchronized clocks across the hosts.
 
-The application generates the following CSV files during execution:
+The application generates the following CSV files inside the `app/` directory:
 
 - `latency_P1.csv` – Player 1 measurements
 - `latency_P2.csv` – Player 2 measurements
 - `latency_server.csv` – Server-side measurements
 
-These files are generated inside the `app/` directory when the application records measurements. They do not need to be created manually.
+These files are generated automatically when the application records measurements. They do not need to be created manually.
+
+The CSV files currently included in the repository contain localhost integration-test measurements. They demonstrate measurement logging and CSV generation; they are separate from the Mininet performance averages reported in the experimental results.
 
 ## 8. Jitter Measurement
 
@@ -154,6 +156,7 @@ During the experiment, the following are observed:
 
 - UDP packet loss
 - Bandwidth received
+- Jitter
 - Traffic-control queue statistics
 - Multiplayer application communication
 
@@ -161,7 +164,9 @@ The `congestion_test.py` script provides functions to start, display and stop th
 
 ### Running the Congestion Test
 
-After starting Mininet, execute the following commands in the **Mininet CLI**:
+After starting Mininet, execute the following commands in the **Mininet CLI**.
+
+First, import the congestion-testing functions:
 
 ```python
 py from congestion_test import start_congestion, show_congestion_output, stop_congestion
@@ -173,19 +178,21 @@ Start the congestion traffic:
 py start_congestion(net)
 ```
 
-Display the iperf3 results and congestion statistics:
+Wait for the configured 60-second experiment to finish.
+
+Display the iperf3 results:
 
 ```python
 py show_congestion_output(net)
 ```
 
-Stop the background congestion traffic:
+Stop any remaining background iperf3 processes:
 
 ```python
 py stop_congestion(net)
 ```
 
-Run these commands in the given order. The congestion traffic runs for the configured 60-second experiment.
+Run these commands in the given order. The game server and player applications can remain running during the congestion experiment.
 
 ## 10. Experimental Results
 
@@ -200,12 +207,15 @@ Run these commands in the given order. The congestion traffic runs for the confi
 
 ### Congested Network Conditions
 
-The following results were observed during the congestion experiment:
+The following results were observed during the 60-second congestion experiment.
 
-| Metric | Player 1 traffic | Player 2 traffic |
+| Metric | Player 1 traffic (h1 → h3) | Player 2 traffic (h2 → h3) |
 |---|---:|---:|
-| Received bandwidth | 0.732 Mbps | 1.13 Mbps |
-| Packet loss | 47% | 18% |
+| Received bandwidth | 1.13 Mbps | 0.793 Mbps |
+| Jitter | 3.018 ms | 2.748 ms |
+| Packet loss | 17% | 42% |
+
+The values are taken from the receiver summaries in the respective iperf3 output screenshots.
 
 ### Bottleneck Link Statistics
 
@@ -219,7 +229,7 @@ Game-state messages continued to appear in the application logs during the obser
 
 ### Application-Level Latency Measurements
 
-The following are the average values calculated from the recorded normal-condition samples:
+The following are the average values reported from the normal-condition Mininet measurements:
 
 | Metric | Player 1 | Player 2 |
 |---|---:|---:|
@@ -227,7 +237,11 @@ The following are the average values calculated from the recorded normal-conditi
 | Average RTT | 39.200 ms | 56.700 ms |
 | Average jitter | 0.647 ms | 3.149 ms |
 
-The normal-condition averages are based on four samples per player. Congested application-level measurements were limited, with available observations around 5.96 seconds. These should be treated as observations rather than statistically conclusive averages.
+The normal-condition averages are based on four samples per player. These Mininet measurements are separate from the localhost integration-test CSV files included in the repository.
+
+Congested application-level measurements were limited, with available observations around 5.96 seconds. These should be treated as observations rather than statistically conclusive averages.
+
+Congestion measurements represent one test run and may vary across repetitions.
 
 ## 11. Evidence
 
@@ -236,7 +250,7 @@ The `evidence/` directory contains screenshots and a live test report demonstrat
 - Player registration and communication
 - SDN controller connection and flow installation
 - Communication during congestion
-- iperf3 bandwidth and packet-loss results
+- iperf3 bandwidth, jitter and packet-loss results
 - Mininet host connectivity using `pingall`
 - Traffic-control statistics
 
@@ -326,7 +340,10 @@ cn-sdn-multiplayer-game/
 │
 ├── app/
 │   ├── client.py
-│   └── server.py
+│   ├── server.py
+│   ├── latency_P1.csv
+│   ├── latency_P2.csv
+│   └── latency_server.csv
 │
 ├── tests/
 │   └── test-results.md
