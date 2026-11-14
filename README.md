@@ -1,228 +1,328 @@
-# UDP Multiplayer Game using Mininet and SDN
+# SDN-Based UDP Multiplayer Game with Latency, Jitter and Congestion Analysis
 
 ## 1. Project Overview
 
-This project implements a UDP-based multiplayer game using Python sockets, Mininet, Open vSwitch, and an SDN controller.
+This project implements a UDP-based multiplayer game communication system using Software-Defined Networking (SDN) and Mininet.
 
-Two players communicate with a central game server. Players register with the server, send game-state updates, receive acknowledgements, and receive updates from the other registered player.
+Two players communicate with a central game server through an SDN-controlled network. The application exchanges player registration messages and game-state updates using UDP.
 
-## 2. Network Architecture
+The project also evaluates network performance by measuring latency, Round-Trip Time (RTT), jitter and packet loss under normal and congested network conditions.
 
-The network consists of three Mininet hosts connected to an OpenFlow switch controlled by OS-Ken.
+## 2. Objectives
 
-| Component | Role | IP Address |
-|---|---|---|
-| h1 | Player 1 | `10.0.0.1` |
-| h2 | Player 2 | `10.0.0.2` |
-| h3 | Game server | `10.0.0.3` |
-| s1 | OpenFlow 1.3 switch | — |
-| OS-Ken | SDN controller | — |
+- Implement a UDP-based multiplayer client-server application.
+- Establish communication between multiple players and a central server.
+- Configure a custom Mininet topology using traffic-controlled links.
+- Use an SDN controller to manage network forwarding.
+- Measure application-level latency and RTT.
+- Analyse jitter in communication between players and the server.
+- Generate network congestion and observe its effect on performance.
+- Compare network behaviour under normal and congested conditions.
 
-**Transport protocol:** UDP  
-**Application port:** `5000`
+## 3. System Architecture
 
-### Communication Flow
+The system consists of three Mininet hosts connected to an OpenFlow switch:
 
-`Player 1 / Player 2 → Mininet hosts → SDN switch → Game server`
+- **h1:** Player 1
+- **h2:** Player 2
+- **h3:** Central game server
+- **s1:** OpenFlow switch
+- **Controller:** OS-Ken SDN controller
 
-The SDN controller manages the switch's forwarding behavior by installing OpenFlow rules. The switch forwards packets between the players and the game server.
+Both players communicate with the server using UDP on port 5000.
 
-## 3. Project Structure
+The server processes incoming game-state updates, acknowledges messages and forwards updates to the other player.
 
-```text
-cn-sdn-multiplayer-game/
-├── app/
-│   ├── client.py
-│   └── server.py
-├── evidence/
-│   ├── README.md
-│   ├── Player communication (P1 and P2).png
-│   └── SDN controller (flow installation).png
-├── tests/
-│   └── test-results.md
-├── controller.py
-├── topology.py
-├── player1.py
-├── player2.py
-├── server.py
-├── .gitignore
-└── README.md
-```
+## 4. Network Topology
 
-The JSON-based client-server implementation in `app/` is the intended application for the documented setup. The additional root-level application files use a separate implementation and should not be mixed with the files in `app/`.
+The project uses a custom Mininet topology implemented using `TCLink`.
 
-## 4. Application Protocol
+| Link | Bandwidth | Delay |
+|---|---:|---:|
+| h1 – s1 | 10 Mbps | 5 ms |
+| h2 – s1 | 10 Mbps | 5 ms |
+| h3 – s1 | 2 Mbps | 10 ms |
 
-The application uses UDP sockets and JSON-formatted messages.
+The server link has a lower bandwidth, creating a bottleneck when traffic exceeds its capacity.
 
-### Registration
+All hosts belong to the `10.0.0.0/24` network.
 
-Each client sends a registration message containing its player ID. The server records the player's address and sends a registration confirmation.
+## 5. Technologies Used
 
-### Game-State Updates
+- Python
+- UDP sockets
+- Mininet
+- Open vSwitch
+- OpenFlow 1.3
+- OS-Ken SDN controller
+- Linux traffic control (`TCLink`)
+- iperf3
+- CSV-based data logging
+- Python-based result analysis
 
-Each update contains:
+## 6. UDP Multiplayer Application
 
-- `player_id` — identifies the player
-- `seq` — sequence number of the update
-- `game_state` — player coordinates (`x`, `y`) and `score`
+The application consists of a client and a central server.
 
-### Server Responses
+### Client
+
+Each player client:
+
+- Connects to the server using UDP.
+- Registers itself with a player ID.
+- Sends game-state updates with sequence numbers.
+- Records the time at which updates are sent.
+- Receives acknowledgements from the server.
+- Calculates RTT using the send and acknowledgement timestamps.
+- Stores latency measurements in CSV files.
+
+### Server
 
 The server:
 
-- Confirms player registration.
-- Acknowledges accepted updates with their sequence numbers.
-- Forwards game-state updates to other registered players.
-- Returns error messages for invalid requests.
+- Receives player registration messages.
+- Maintains information about connected players.
+- Receives and processes game-state updates.
+- Tracks sequence numbers to identify duplicate updates.
+- Sends acknowledgements to clients.
+- Forwards received updates to the other player.
+- Records server-side timestamps and latency information.
 
-## 5. Technologies and Requirements
+## 7. Latency and RTT Measurement
+
+Latency and RTT are measured during application communication.
+
+**One-way latency:**
+
+The time difference between the client sending an update and the server receiving it.
+
+**Round-Trip Time (RTT):**
+
+The time between sending an update and receiving its acknowledgement.
+
+RTT is calculated using the client's local monotonic clock, avoiding the need for synchronized clocks.
+
+One-way latency uses timestamps from the client and server. Accurate one-way measurements therefore require synchronized clocks across the hosts.
+
+The measurements are stored in CSV files:
+
+- `latency_P1.csv`
+- `latency_P2.csv`
+- `latency_server.csv`
+
+## 8. Jitter Measurement
+
+Jitter represents the variation in packet delay over time.
+
+For consecutive latency measurements, jitter is calculated as:
+
+$$
+J_i = |L_i - L_{i-1}|
+$$
+
+where:
+
+- $L_i$ is the current latency measurement.
+- $L_{i-1}$ is the previous latency measurement.
+
+Average jitter is calculated as:
+
+$$
+J_{\text{avg}} =
+\frac{\sum_{i=2}^{n}|L_i-L_{i-1}|}{n-1}
+$$
+
+Jitter is calculated from consecutive one-way latency measurements for each player.
+
+## 9. Congestion Testing
+
+Network congestion is introduced using UDP traffic generated with iperf3.
+
+Two background traffic streams are configured:
+
+| Traffic source | Destination | Offered rate |
+|---|---|---:|
+| h1 | h3 | 1.5 Mbps |
+| h2 | h3 | 1.5 Mbps |
+
+The combined offered traffic is 3 Mbps, which exceeds the server link capacity of 2 Mbps.
+
+The congestion experiment runs for 60 seconds.
+
+During the experiment, the following are observed:
+
+- UDP packet loss
+- Jitter reported by iperf3
+- Bandwidth received
+- Traffic-control queue statistics
+- Multiplayer application communication
+- Changes in application latency and RTT
+
+The `congestion_test.py` script is used to start and stop the background congestion traffic and display the results.
+
+## 10. Experimental Results
+
+### Normal Network Conditions
+
+- All Mininet hosts communicated successfully.
+- `pingall` reported 0% packet loss.
+- Both players registered successfully with the server.
+- Game-state updates were exchanged between the players.
+- Acknowledgements were received successfully.
+- Latency, RTT and jitter measurements were recorded.
+
+### Congested Network Conditions
+
+The following results were observed during the congestion experiment:
+
+| Metric | Player 1 traffic | Player 2 traffic |
+|---|---:|---:|
+| UDP datagrams received | 7,768 | 7,770 |
+| Datagrams lost | 1,323 | 3,253 |
+| Packet loss | 17% | 42% |
+| Received bandwidth | 1.13 Mbps | 793 Kbps |
+| iperf3 jitter | 3.018 ms | 2.748 ms |
+
+### Bottleneck Link Statistics
+
+The traffic-control statistics for the server-facing link (`s1-eth3`) showed:
+
+- Dropped packets: 4,586
+- Overlimits: 10,957
+- Requeues: 0
+
+These results demonstrate the impact of traffic exceeding the configured server-link bandwidth.
+
+### Application-Level Latency Measurements
+
+The following are the average values calculated from the recorded normal-condition samples:
+
+| Metric | Player 1 | Player 2 |
+|---|---:|---:|
+| Average one-way latency | 16.525 ms | 19.498 ms |
+| Average RTT | 39.200 ms | 56.700 ms |
+| Average consecutive one-way latency variation | 0.647 ms | 3.149 ms |
+
+The congested application-level measurements showed delays of approximately 5.96 seconds in the available samples.
+
+**Note:** The normal-condition averages are based on four samples per player. Congested application-level samples were limited, so they should be treated as observations rather than statistically conclusive averages.
+
+## 11. Graphs and Performance Analysis
+
+The results folder contains graphs and summary files used to analyse the measured network performance.
+
+The graphs include:
+
+- Average one-way latency comparison
+- Average RTT comparison
+- Normal-condition jitter comparison
+
+The CSV summary files contain the measurements used for analysis.
+
+## 12. How to Run the Project
+
+### Requirements
+
+The project requires:
 
 - Ubuntu
 - Python 3
 - Mininet
 - Open vSwitch
-- OS-Ken SDN controller
-- UDP sockets
-- JSON
-- OpenFlow 1.3
+- OS-Ken
+- iperf3
 
-## 6. Setup and Execution
+### Start the SDN Controller
 
-Run the project in the Ubuntu environment where Mininet and OS-Ken are installed.
+From the project directory, start the OS-Ken controller using the configured Python environment.
 
-The commands below assume that the project is located at `/home/yashika/multiplayer_sdn`. Replace this path if your project is stored elsewhere.
-
-### Step 1: Open the project directory
+### Start Mininet
 
 ```bash
-cd ~/multiplayer_sdn
+sudo mn --custom topology.py --topo gamenet --controller=remote,ip=127.0.0.1,port=6653 --switch ovs,protocols=OpenFlow13
 ```
 
-### Step 2: Start the SDN controller
-
-Open a terminal, activate the Python environment in which OS-Ken is installed, and navigate to the project directory.
-
-Run:
+### Test Network Connectivity
 
 ```bash
-osken-manager controller.py
-```
-
-Keep the controller running in this terminal.
-
-### Step 3: Start Mininet
-
-Open a second terminal and run:
-
-```bash
-sudo mn --custom ~/multiplayer_sdn/topology.py --topo gamenet --controller=remote --switch ovs,protocols=OpenFlow13
-```
-
-Wait for the `mininet>` prompt.
-
-### Step 4: Start the game server
-
-At the Mininet prompt, run:
-
-```text
-h3 python3 /home/yashika/multiplayer_sdn/app/server.py
-```
-
-Keep the server running.
-
-### Step 5: Start the player clients
-
-Open another terminal and enter the Mininet CLI if needed, then start each client on its respective host.
-
-For Player 1, run at the `mininet>` prompt:
-
-```text
-h1 python3 /home/yashika/multiplayer_sdn/app/client.py P1 10.0.0.3
-```
-
-For Player 2, run at the `mininet>` prompt:
-
-```text
-h2 python3 /home/yashika/multiplayer_sdn/app/client.py P2 10.0.0.3
-```
-
-Enter three integers for each game-state update: `x y score`.
-
-Example:
-
-```text
-10 20 0
-```
-
-The clients should display registration messages, acknowledgements, and game-state updates received from the other player.
-
-### Step 6: Verify connectivity and forwarding
-
-At the Mininet prompt, check connectivity between hosts:
-
-```text
 pingall
 ```
 
-Inspect the switch's OpenFlow rules:
+### Start the Game Server
 
-```text
-sh ovs-ofctl -O OpenFlow13 dump-flows s1
+From the Mininet CLI:
+
+```bash
+h3 python3 -u /home/yashika/multiplayer_sdn/app/server.py
 ```
 
-Check the controller terminal for switch connection, table-miss flow installation, and forwarding-flow installation messages.
+### Start Player 1
 
-## 7. Testing and Validation
+```bash
+h1 python3 -u /home/yashika/multiplayer_sdn/app/client.py P1 10.0.0.3
+```
 
-The following functionality was demonstrated during integration testing.
+### Start Player 2
 
-| Test Case | Observed Result |
-|---|---|
-| Player 1 registration | Registration successful |
-| Player 2 registration | Registration successful |
-| Host connectivity | `pingall` completed with 0% packet loss |
-| Game-state update | Client sent coordinates and score |
-| Sequence-number acknowledgement | ACK received for sequence number 1 |
-| Multiple-player communication | Each player received the other player's update |
-| SDN controller | Switch connection, table-miss flow installation, and forwarding-flow installation messages were observed |
+```bash
+h2 python3 -u /home/yashika/multiplayer_sdn/app/client.py P2 10.0.0.3
+```
 
-The connectivity test, player communication tests, and controller output provide evidence of the integration. The switch flow-table command in Step 6 can also be used to inspect the installed OpenFlow rules.
+### Run Congestion Testing
 
-Detailed results are available in [`tests/test-results.md`](tests/test-results.md).
+Use the functions provided in `congestion_test.py` to start the background traffic, observe the results and stop the traffic.
 
-## 8. Test Evidence
+**Note:** Replace the example absolute paths with the actual project path on your machine.
 
-Screenshots from the integration tests are stored in the repository's `evidence/` folder.
+## 13. Repository Structure
 
-- [Player communication: registration, updates, and acknowledgements](evidence/Player%20communication%20(P1%20and%20P2).png)
-- [SDN controller: switch connection and flow installation](evidence/SDN%20controller%20(flow%20installation).png)
+```text
+cn-sdn-multiplayer-game/
+│
+├── README.md
+├── controller.py
+├── topology.py
+├── congestion_test.py
+├── jitter_analysis.py
+├── requirements.txt
+├── .gitignore
+│
+├── app/
+│   ├── client.py
+│   ├── server.py
+│   ├── latency_P1.csv
+│   ├── latency_P2.csv
+│   └── latency_server.csv
+│
+├── evidence/
+│   ├── pingall.png
+│   ├── server_registration.png
+│   ├── normal_player_communication.png
+│   ├── congestion_player_communication.png
+│   ├── iperf_player1.png
+│   ├── iperf_player2.png
+│   └── tc_statistics.png
+│
+└── results/
+    ├── results_report.md
+    ├── average_one_way_latency.png
+    ├── average_rtt.png
+    ├── normal_condition_jitter.png
+    └── latency_jitter_summary.csv
+```
 
-The folder also contains [`evidence/README.md`](evidence/README.md), which describes the screenshots.
+## 14. Team Contributions
 
-## 9. Team Responsibilities
+The project was developed collaboratively, with responsibilities distributed across application development, network configuration and performance analysis.
 
-- **Person 1:** UDP client and server application
-- **Person 2:** Mininet topology and SDN controller
-- **Person 3:** Integration, testing, and documentation
+- **UDP application and latency measurement:** Implementation of client-server communication, player registration, game-state exchange, acknowledgement handling, RTT measurement and latency logging.
+- **Network topology and congestion testing:** Configuration of the Mininet topology using traffic-controlled links, bandwidth constraints and background congestion traffic.
+- **Jitter analysis and integration:** Integration of the application and network components, jitter measurement, experiment execution, result collection, graph generation and documentation.
 
-## 10. Deliverable 1 (D1)
+## 15. Conclusion
 
-The first deliverable demonstrates the initial implementation of a UDP multiplayer application integrated with a Mininet-based SDN network.
+The project demonstrates a UDP-based multiplayer communication system operating over an SDN-controlled Mininet network.
 
-The repository contains:
+The application successfully supports player registration, game-state exchange and acknowledgement handling. Performance measurements under normal and congested conditions demonstrate how bandwidth limitations and competing traffic affect latency, jitter, packet loss and communication performance.
 
-- UDP client and server source code
-- Mininet topology
-- SDN controller implementation
-- Network architecture and application protocol
-- Setup and execution instructions
-- Integration test results
-- Screenshots of player communication and controller output
-
-## 11. Conclusion
-
-This project demonstrates UDP socket communication between two players and a central game server in a Mininet environment controlled by an SDN controller. Integration testing demonstrated player registration, game-state updates, sequence-number acknowledgements, updates between players, host connectivity, and SDN controller flow installation.
-
-The project establishes the initial implementation of a multiplayer application over a software-defined network and provides source code, execution instructions, test results, and supporting screenshots.
-
+The experiments highlight the importance of network performance analysis when designing real-time multiplayer applications.
