@@ -1,28 +1,31 @@
-# Network and Application Test Evidence
+# Project Evidence
 
-This folder contains screenshots from the SDN-based UDP multiplayer game experiments.
+This folder contains screenshots demonstrating the implementation and testing of the SDN-based UDP multiplayer game.
 
-## Existing screenshots
+## 1. Player Communication
 
-- **Player communication (P1 and P2):** Player registration, game-state updates, acknowledgements and communication between both players.
-- **SDN controller (flow installation):** Switch connection and OpenFlow flow installation.
+Demonstrates successful registration of both players with the game server, exchange of game-state updates, and acknowledgement messages during communication.
 
-## Additional experiment evidence identified
+## 2. SDN Controller
 
-The submitted `cn evidence.docx` contains these screenshots:
+Shows the SDN controller connecting to the OpenFlow switch and installing flow rules to manage packet forwarding.
 
-| Evidence | Source location | What it demonstrates |
-|---|---|---|
-| Mininet connectivity | Page 1, top | `pingall`: 0% packet loss (6/6 received). |
-| Normal communication | Page 1, middle and bottom; page 2, top | Registration and normal player updates/ACKs. |
-| Congestion setup | Page 2 | Two 1.5 Mbps UDP streams (3 Mbps aggregate) against a 2 Mbps server-facing bottleneck. |
-| Communication during congestion | Pages 2–3 | Server receives updates; clients show ACK, latency and RTT measurements. |
-| Player 1 iperf3 | Page 4 | Receiver: 1.13 Mbps, 3.018 ms jitter, 17% packet loss. |
-| Player 2 iperf3 | Page 5, top | Receiver: approximately 793 Kbps, 2.748 ms jitter, 42% packet loss. |
-| Traffic-control statistics | Page 5, bottom | `s1-eth3`: 4,586 dropped packets, 10,957 overlimits, 0 requeues. |
+## 3. Network Connectivity
 
-**Note:** These additional screenshots are documented from the submitted Word evidence file, but are not yet stored as individual image files in this repository. Page references identify the correct screenshots for upload.
+Shows successful connectivity between all Mininet hosts using the `pingall` command.
 
-## Measurement distinction
+## 4. Normal Network Communication
 
-iperf3 jitter is a network-level measurement. Jitter calculated from application one-way latency samples is a separate application-level measurement; do not combine the two.
+Demonstrates player-server communication under normal network conditions, including registration, game-state updates, acknowledgements, latency and RTT measurements.
+
+## 5. Congestion Testing
+
+Shows the generation of background UDP traffic to introduce congestion in the network and the effect on multiplayer communication.
+
+## 6. Performance Measurements
+
+Includes iperf3 results for both players, showing received bandwidth, packet loss and network jitter.
+
+## 7. Traffic-Control Statistics
+
+Shows the traffic-control statistics of the server-facing link, including dropped packets and overlimit events.
