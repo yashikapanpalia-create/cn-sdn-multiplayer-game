@@ -41,10 +41,11 @@
 
 The server-facing link was configured at 2 Mbps. Two simultaneous UDP streams generated an aggregate offered load of 3 Mbps for 60 seconds.
 
-| Stream | Received bandwidth | Packet loss |
+| Metric | Player 1 (h1 → h3) | Player 2 (h2 → h3) |
 |---|---:|---:|
-| h1 → h3 | 0.732 Mbps | 47% |
-| h2 → h3 | 1.13 Mbps | 18% |
+| Received bandwidth | 1.13 Mbps | 0.793 Mbps |
+| Jitter | 3.018 ms | 2.748 ms |
+| Packet loss | 17% | 42% |
 
 Traffic-control statistics:
 
@@ -54,8 +55,8 @@ Traffic-control statistics:
 
 Game-state messages continued to appear in the application logs during the observed congested run.
 
+*Congestion measurements represent one test run and may vary across repetitions.*
+
 ## 5. Conclusion
 
-Testing demonstrated successful multiplayer communication over the SDN-controlled network. Performance measurements showed the effects of congestion on bandwidth and packet delivery. The application also continued exchanging game-state messages during the observed congestion experiment.
-
-*Congestion measurements represent one test run and may vary across repetitions.*
+Testing demonstrated successful multiplayer communication over the SDN-controlled network. Performance measurements showed the effects of congestion on bandwidth, jitter and packet delivery. The application also continued exchanging game-state messages during the observed congestion experiment.
