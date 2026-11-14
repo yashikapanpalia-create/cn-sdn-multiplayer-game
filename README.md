@@ -268,6 +268,13 @@ The project requires:
 - Open vSwitch
 - OS-Ken
 - iperf3
+- xterm
+
+If xterm is not installed, install it using:
+
+```bash
+sudo apt install xterm
+```
 
 ### Start the SDN Controller
 
@@ -303,20 +310,30 @@ h3 python3 -u app/server.py &
 
 The server runs in the background, allowing the Mininet CLI to remain available for launching the player clients.
 
-### Start Player 1
+### Open Separate Player Terminals
 
 From the Mininet CLI:
 
 ```bash
-h1 python3 -u app/client.py P1 10.0.0.3
+xterm h1 h2
+```
+
+This opens separate terminal windows for Player 1 and Player 2.
+
+### Start Player 1
+
+Inside the h1 terminal:
+
+```bash
+python3 -u app/client.py P1 10.0.0.3
 ```
 
 ### Start Player 2
 
-From the Mininet CLI:
+Inside the h2 terminal:
 
 ```bash
-h2 python3 -u app/client.py P2 10.0.0.3
+python3 -u app/client.py P2 10.0.0.3
 ```
 
 Enter the game-state values in the format:
@@ -330,6 +347,8 @@ For example:
 ```text
 10 20 0
 ```
+
+Both players can now independently enter game-state updates and receive updates from the other player.
 
 ## 13. Repository Structure
 
