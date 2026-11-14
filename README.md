@@ -4,7 +4,7 @@
 
 This project implements a UDP-based multiplayer game communication system using Software-Defined Networking (SDN) and Mininet.
 
-Two players communicate with a central game server through an SDN-controlled network. The application exchanges player registration messages and game-state updates using UDP.
+Two players communicate with a central game server through an SDN-controlled network. The application supports player registration, game-state updates, acknowledgements and player-to-player update forwarding.
 
 The project also evaluates network performance by measuring latency, Round-Trip Time (RTT), jitter and packet loss under normal and congested network conditions.
 
@@ -49,7 +49,7 @@ All hosts belong to the `10.0.0.0/24` network.
 
 ## 5. Technologies Used
 
-- Python
+- Python 3
 - UDP sockets
 - Mininet
 - Open vSwitch
@@ -58,7 +58,6 @@ All hosts belong to the `10.0.0.0/24` network.
 - Linux traffic control (`TCLink`)
 - iperf3
 - CSV-based data logging
-- Python-based result analysis
 
 ## 6. UDP Multiplayer Application
 
@@ -74,7 +73,7 @@ Each player client:
 - Records the time at which updates are sent.
 - Receives acknowledgements from the server.
 - Calculates RTT using the send and acknowledgement timestamps.
-- Stores latency measurements in CSV files.
+- Stores latency measurements in a CSV file.
 
 ### Server
 
@@ -83,7 +82,7 @@ The server:
 - Receives player registration messages.
 - Maintains information about connected players.
 - Receives and processes game-state updates.
-- Tracks sequence numbers to identify duplicate updates.
+- Tracks sequence numbers to identify duplicate or out-of-order updates.
 - Sends acknowledgements to clients.
 - Forwards received updates to the other player.
 - Records server-side timestamps and latency information.
@@ -104,11 +103,13 @@ RTT is calculated using the client's local monotonic clock, avoiding the need fo
 
 One-way latency uses timestamps from the client and server. Accurate one-way measurements therefore require synchronized clocks across the hosts.
 
-The measurements are stored in CSV files:
+The application generates the following CSV files during execution:
 
-- `latency_P1.csv`
-- `latency_P2.csv`
-- `latency_server.csv`
+- `latency_P1.csv` – Player 1 measurements
+- `latency_P2.csv` – Player 2 measurements
+- `latency_server.csv` – Server-side measurements
+
+These files are generated inside the `app/` directory when the application records measurements. They do not need to be created manually.
 
 ## 8. Jitter Measurement
 
@@ -122,8 +123,8 @@ $$
 
 where:
 
-- $L_i$ is the current latency measurement.
-- $L_{i-1}$ is the previous latency measurement.
+- \(L_i\) is the current latency measurement.
+- \(L_{i-1}\) is the previous latency measurement.
 
 Average jitter is calculated as:
 
@@ -152,13 +153,11 @@ The congestion experiment runs for 60 seconds.
 During the experiment, the following are observed:
 
 - UDP packet loss
-- Jitter reported by iperf3
 - Bandwidth received
 - Traffic-control queue statistics
 - Multiplayer application communication
-- Changes in application latency and RTT
 
-The `congestion_test.py` script is used to start and stop the background congestion traffic and display the results.
+The `congestion_test.py` script starts, displays and stops the background congestion traffic.
 
 ## 10. Experimental Results
 
@@ -177,21 +176,18 @@ The following results were observed during the congestion experiment:
 
 | Metric | Player 1 traffic | Player 2 traffic |
 |---|---:|---:|
-| UDP datagrams received | 7,768 | 7,770 |
-| Datagrams lost | 1,323 | 3,253 |
-| Packet loss | 17% | 42% |
-| Received bandwidth | 1.13 Mbps | 793 Kbps |
-| iperf3 jitter | 3.018 ms | 2.748 ms |
+| Received bandwidth | 0.732 Mbps | 1.13 Mbps |
+| Packet loss | 47% | 18% |
 
 ### Bottleneck Link Statistics
 
-The traffic-control statistics for the server-facing link (`s1-eth3`) showed:
+The traffic-control statistics for the server-facing link showed:
 
-- Dropped packets: 4,586
-- Overlimits: 10,957
+- Dropped packets: 7,657
+- Overlimits: 20,914
 - Requeues: 0
 
-These results demonstrate the impact of traffic exceeding the configured server-link bandwidth.
+Game-state messages continued to appear in the application logs during the observed congested run.
 
 ### Application-Level Latency Measurements
 
@@ -201,23 +197,22 @@ The following are the average values calculated from the recorded normal-conditi
 |---|---:|---:|
 | Average one-way latency | 16.525 ms | 19.498 ms |
 | Average RTT | 39.200 ms | 56.700 ms |
-| Average consecutive one-way latency variation | 0.647 ms | 3.149 ms |
+| Average jitter | 0.647 ms | 3.149 ms |
 
-The congested application-level measurements showed delays of approximately 5.96 seconds in the available samples.
+The normal-condition averages are based on four samples per player. Congested application-level measurements were limited, with available observations around 5.96 seconds. These should be treated as observations rather than statistically conclusive averages.
 
-**Note:** The normal-condition averages are based on four samples per player. Congested application-level samples were limited, so they should be treated as observations rather than statistically conclusive averages.
+## 11. Evidence
 
-## 11. Graphs and Performance Analysis
+The `evidence/` directory contains screenshots and a live test report demonstrating:
 
-The results folder contains graphs and summary files used to analyse the measured network performance.
+- Player registration and communication
+- SDN controller connection and flow installation
+- Communication during congestion
+- iperf3 bandwidth and packet-loss results
+- Mininet host connectivity using `pingall`
+- Traffic-control statistics
 
-The graphs include:
-
-- Average one-way latency comparison
-- Average RTT comparison
-- Normal-condition jitter comparison
-
-The CSV summary files contain the measurements used for analysis.
+Refer to `evidence/README.md` for the evidence list and `evidence/LIVE_TEST_REPORT.md` for the live communication test report.
 
 ## 12. How to Run the Project
 
@@ -234,15 +229,23 @@ The project requires:
 
 ### Start the SDN Controller
 
-From the project directory, start the OS-Ken controller using the configured Python environment.
+From the project directory, run:
+
+```bash
+~/osken-venv/bin/python -c "from os_ken.base import app_manager; app_manager.AppManager.run_apps(['controller'])"
+```
 
 ### Start Mininet
+
+Open another terminal in the project directory:
 
 ```bash
 sudo mn --custom topology.py --topo gamenet --controller=remote,ip=127.0.0.1,port=6653 --switch ovs,protocols=OpenFlow13
 ```
 
 ### Test Network Connectivity
+
+From the Mininet CLI:
 
 ```bash
 pingall
@@ -253,26 +256,38 @@ pingall
 From the Mininet CLI:
 
 ```bash
-h3 python3 -u /home/yashika/multiplayer_sdn/app/server.py
+h3 python3 -u app/server.py
 ```
 
 ### Start Player 1
 
+Open another Mininet CLI terminal or use the Mininet CLI to run:
+
 ```bash
-h1 python3 -u /home/yashika/multiplayer_sdn/app/client.py P1 10.0.0.3
+h1 python3 -u app/client.py P1 10.0.0.3
 ```
 
 ### Start Player 2
 
 ```bash
-h2 python3 -u /home/yashika/multiplayer_sdn/app/client.py P2 10.0.0.3
+h2 python3 -u app/client.py P2 10.0.0.3
+```
+
+Enter the game-state values in the format:
+
+```text
+x y score
+```
+
+For example:
+
+```text
+10 20 0
 ```
 
 ### Run Congestion Testing
 
-Use the functions provided in `congestion_test.py` to start the background traffic, observe the results and stop the traffic.
-
-**Note:** Replace the example absolute paths with the actual project path on your machine.
+Use the functions in `congestion_test.py` from the Mininet environment to start the background UDP traffic, display the iperf3 results and stop the congestion traffic.
 
 ## 13. Repository Structure
 
@@ -280,49 +295,36 @@ Use the functions provided in `congestion_test.py` to start the background traff
 cn-sdn-multiplayer-game/
 │
 ├── README.md
+├── .gitignore
 ├── controller.py
 ├── topology.py
 ├── congestion_test.py
-├── jitter_analysis.py
-├── requirements.txt
-├── .gitignore
 │
 ├── app/
 │   ├── client.py
-│   ├── server.py
-│   ├── latency_P1.csv
-│   ├── latency_P2.csv
-│   └── latency_server.csv
+│   └── server.py
 │
-├── evidence/
-│   ├── pingall.png
-│   ├── server_registration.png
-│   ├── normal_player_communication.png
-│   ├── congestion_player_communication.png
-│   ├── iperf_player1.png
-│   ├── iperf_player2.png
-│   └── tc_statistics.png
+├── tests/
+│   └── test-results.md
 │
-└── results/
-    ├── results_report.md
-    ├── average_one_way_latency.png
-    ├── average_rtt.png
-    ├── normal_condition_jitter.png
-    └── latency_jitter_summary.csv
+└── evidence/
+    ├── README.md
+    ├── LIVE_TEST_REPORT.md
+    ├── Player communication (P1 and P2).png
+    ├── SDN controller (flow installation).png
+    ├── congestion_communication.png
+    ├── iperf_player1.png
+    ├── iperf_player2.png
+    ├── pingall.png
+    └── tc_statistics.png
 ```
 
-## 14. Team Contributions
-
-The project was developed collaboratively, with responsibilities distributed across application development, network configuration and performance analysis.
-
-- **UDP application and latency measurement:** Implementation of client-server communication, player registration, game-state exchange, acknowledgement handling, RTT measurement and latency logging.
-- **Network topology and congestion testing:** Configuration of the Mininet topology using traffic-controlled links, bandwidth constraints and background congestion traffic.
-- **Jitter analysis and integration:** Integration of the application and network components, jitter measurement, experiment execution, result collection, graph generation and documentation.
-
-## 15. Conclusion
+## 14. Conclusion
 
 The project demonstrates a UDP-based multiplayer communication system operating over an SDN-controlled Mininet network.
 
-The application successfully supports player registration, game-state exchange and acknowledgement handling. Performance measurements under normal and congested conditions demonstrate how bandwidth limitations and competing traffic affect latency, jitter, packet loss and communication performance.
+The application supports player registration, game-state exchange, acknowledgement handling and player-to-player update forwarding.
+
+Performance measurements under normal and congested conditions demonstrate how bandwidth limitations and competing traffic affect latency, jitter, packet loss and communication performance.
 
 The experiments highlight the importance of network performance analysis when designing real-time multiplayer applications.
