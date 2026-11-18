@@ -350,6 +350,76 @@ For example:
 
 Both players can now independently enter game-state updates and receive updates from the other player.
 
+### Run the Congestion Experiment
+
+After starting the game server and both player clients, perform the following steps to generate background UDP traffic and analyse network performance under congestion.
+
+**1. Load the congestion testing module**
+
+From the Mininet CLI (`mininet>`), add the project directory to Python's search path:
+
+```python
+py __import__('sys').path.insert(0, '/home/yashika/multiplayer_sdn')
+```
+
+Replace the path with your own project directory if it is different.
+
+**2. Start background UDP congestion**
+
+```python
+py __import__('congestion_test').start_congestion(net)
+```
+
+This generates two simultaneous UDP traffic streams:
+
+- h1 → h3: 1.5 Mbps on port 5201.
+- h2 → h3: 1.5 Mbps on port 5202.
+- Aggregate offered load: 3 Mbps.
+- Shared bottleneck capacity: 2 Mbps.
+- Test duration: 60 seconds.
+
+**3. Send game messages during congestion**
+
+While the congestion experiment is running, enter game-state updates in the h1 and h2 terminals using the format:
+
+```text
+10 20 0
+20 30 5
+30 40 10
+```
+
+Observe the h3 server terminal to verify that game-state messages continue to arrive.
+
+**4. Display congestion results**
+
+After the 60-second test finishes, run:
+
+```python
+py __import__('congestion_test').show_congestion_output(net)
+```
+
+The output displays sender and receiver bandwidth, UDP jitter and packet loss for both traffic streams.
+
+**5. Check bottleneck link statistics**
+
+From the Mininet CLI:
+
+```python
+sh sudo tc -s class show dev s1-eth3
+```
+
+This displays the traffic-control statistics of the server-facing bottleneck link, including transmitted packets, dropped packets and overlimits.
+
+**6. Stop background congestion traffic**
+
+```python
+py __import__('congestion_test').stop_congestion(net)
+```
+
+This stops the iperf3 processes while leaving the game server and player applications running.
+
+**Note:** The game application uses UDP port 5000, while iperf3 generates background traffic on ports 5201 and 5202. All traffic shares the same server-facing bottleneck link.
+
 ## 13. Repository Structure
 
 ```text
